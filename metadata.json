@@ -1,0 +1,6 @@
+{
+  "name": "Swasthya AI",
+  "description": "Modern healthcare AI clinical intake and patient-doctor communication platform with multilingual voice support, structured clinical summaries, and physician dashboard.",
+  "requestFramePermissions": ["microphone", "camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
