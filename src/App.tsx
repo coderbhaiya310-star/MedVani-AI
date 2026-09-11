@@ -296,15 +296,20 @@ export default function App() {
     navigate('/login');
   };
 
-  const currentUser = authSession?.user || null;
+  const currentUser = authSession?.user || authService.getCurrentUser() || null;
   const activeSession =
     currentSession || (currentUser ? createFreshUserSession(currentUser) : defaultClinicalSession);
 
   // Check whether we are on a page with its own self-contained top bar (login, signup, and portal dashboards)
   const isDedicatedPortalPage =
     location.pathname === '/patient-portal' ||
+    location.pathname === '/patient-dashboard' ||
     location.pathname === '/doctor-portal' ||
-    location.pathname === '/admin-portal';
+    location.pathname === '/doctor-dashboard' ||
+    location.pathname === '/admin-portal' ||
+    location.pathname === '/admin-dashboard' ||
+    location.pathname === '/doctor' ||
+    location.pathname === '/admin';
   const isAuthPage = location.pathname === '/login' || location.pathname === '/signup';
   const hideCommonHeader = isAuthPage || isDedicatedPortalPage;
 
@@ -391,7 +396,7 @@ export default function App() {
             }
           />
 
-          {/* 8. Doctor Portal: Route /doctor-portal */}
+          {/* 8. Doctor Portal & Dashboard: Route /doctor-portal & /doctor-dashboard */}
           <Route
             path="/doctor-portal"
             element={
@@ -406,8 +411,23 @@ export default function App() {
               )
             }
           />
+          <Route
+            path="/doctor-dashboard"
+            element={
+              !currentUser ? (
+                <Navigate to="/login" replace />
+              ) : currentUser.role === 'doctor' ? (
+                <DoctorPortalPage user={currentUser} onLogout={handleLogout} />
+              ) : currentUser.role === 'patient' ? (
+                <Navigate to="/patient-portal" replace />
+              ) : (
+                <Navigate to="/admin-portal" replace />
+              )
+            }
+          />
+          <Route path="/doctor" element={<Navigate to="/doctor-dashboard" replace />} />
 
-          {/* 9. Admin Portal: Route /admin-portal */}
+          {/* 9. Admin Portal & Dashboard: Route /admin-portal & /admin-dashboard */}
           <Route
             path="/admin-portal"
             element={
@@ -422,23 +442,26 @@ export default function App() {
               )
             }
           />
+          <Route
+            path="/admin-dashboard"
+            element={
+              !currentUser ? (
+                <Navigate to="/login" replace />
+              ) : currentUser.role === 'admin' ? (
+                <AdminPortalPage user={currentUser} onLogout={handleLogout} />
+              ) : currentUser.role === 'doctor' ? (
+                <Navigate to="/doctor-portal" replace />
+              ) : (
+                <Navigate to="/patient-portal" replace />
+              )
+            }
+          />
+          <Route path="/admin" element={<Navigate to="/admin-dashboard" replace />} />
 
           {/* Patient Portal Dashboard: Route /patient-dashboard */}
           <Route
             path="/patient-dashboard"
             element={<Navigate to="/patient-portal" replace />}
-          />
-
-          {/* Doctor Dashboard: Route /doctor-dashboard */}
-          <Route
-            path="/doctor-dashboard"
-            element={<Navigate to="/doctor-portal" replace />}
-          />
-
-          {/* Admin Dashboard: Route /admin-dashboard */}
-          <Route
-            path="/admin-dashboard"
-            element={<Navigate to="/admin-portal" replace />}
           />
 
           {/* Voice Intake Flow: Route /voice-intake */}

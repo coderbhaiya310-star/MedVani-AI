@@ -90,6 +90,7 @@ export function findBestVoiceForLanguage(lang: LanguageCode): {
     as: ['assamese', 'অসমীয়া'],
     ur: ['urdu', 'اردو', 'asad', 'uzma', 'nastaliq'],
     en: ['english (india)', 'india', 'indian', 'neerja', 'ravi', 'en-in', 'en_in'],
+    hinglish: ['english (india)', 'india', 'indian', 'neerja', 'ravi', 'hindi', 'swara', 'en-in', 'hi-in'],
   };
 
   const keywords = nameKeywords[targetPrefix] || [config.name.toLowerCase(), config.nativeName.toLowerCase()];
@@ -146,12 +147,13 @@ export function findBestVoiceForLanguage(lang: LanguageCode): {
   // 5. If no native voice exists in OS voice list for this Indic language:
   // IMPORTANT: Return voice: null so the browser does NOT force an English voice on Indic text.
   // The browser will use targetLocale to synthesize online / via native platform engine.
-  if (targetPrefix !== 'en') {
+  if (targetPrefix !== 'en' && targetPrefix !== 'hinglish') {
     return { voice: null, isNative: false, langCode: targetLocale };
   }
 
-  // For English, fallback to Indian English or first English voice
-  const indianEnglish = voices.find((v) => v.lang && v.lang.toLowerCase().includes('en-in'));
+  // For English and Hinglish, fallback to Indian English or Hindi or first English voice
+  const indianEnglish = voices.find((v) => v.lang && v.lang.toLowerCase().includes('en-in')) ||
+                        voices.find((v) => v.lang && v.lang.toLowerCase().startsWith('hi'));
   if (indianEnglish) {
     return { voice: indianEnglish, isNative: true, langCode: indianEnglish.lang };
   }

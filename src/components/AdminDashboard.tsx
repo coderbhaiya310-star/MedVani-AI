@@ -152,10 +152,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ user }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900">Gemini 3.7 Flash Engine</span>
+                  <span className="font-bold text-slate-900">Gemini 3.8 Flash Engine</span>
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
                 </div>
-                <p className="text-slate-600">Model: models/gemini-3.7-flash (Multilingual Clinical Extraction)</p>
+                <p className="text-slate-600">Model: models/gemini-3.8-flash (Multilingual Clinical Extraction)</p>
                 <span className="text-[10px] text-emerald-700 font-semibold">Latency: ~480ms</span>
               </div>
 

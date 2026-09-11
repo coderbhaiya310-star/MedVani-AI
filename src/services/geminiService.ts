@@ -7,6 +7,8 @@ function getAuthHeaders(): Record<string, string> {
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const sessId = authService.getCurrentSessionId();
   if (sessId) headers['x-session-id'] = sessId;
+  const user = authService.getUser();
+  if (user?.id) headers['x-user-id'] = user.id;
   return headers;
 }
 
@@ -17,9 +19,18 @@ export async function sendClinicalChatMessage(params: {
   activeLanguage: LanguageCode;
   conversationPhase: string;
   liveExtraction?: LiveExtractionState;
+  structuredMemory?: any;
   signal?: AbortSignal;
 }): Promise<{
   replyText: string;
+  next_question?: string;
+  detected_language?: string;
+  detected_language_code?: string;
+  patient_understanding?: string;
+  already_known?: string[];
+  missing_information?: string[];
+  current_topic?: string;
+  structuredMemory?: any;
   englishTranslation?: string;
   clinicalTag: 'chief_complaint' | 'symptom_detail' | 'medication' | 'history' | 'allergy' | 'lifestyle' | 'red_flag' | 'general' | 'confirmation' | 'wrap_up';
   nextPhase: string;
@@ -38,6 +49,10 @@ export async function sendClinicalChatMessage(params: {
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      console.warn('[Clinical Chat] Stale session encountered, clearing credentials.');
+      authService.clearStaleSession();
+    }
     throw new Error(errorData.details || errorData.error || 'Failed to communicate with clinical AI');
   }
 
@@ -86,6 +101,10 @@ export async function generateStructuredClinicalSummary(params: {
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      console.warn('[Clinical Summary] Stale session encountered, clearing credentials.');
+      authService.clearStaleSession();
+    }
     throw new Error(errorData.details || errorData.error || 'Failed to generate clinical summary');
   }
 

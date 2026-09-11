@@ -100,9 +100,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
 
       setTimeout(() => {
         if (selectedRole === 'doctor') {
-          navigate('/doctor-portal');
+          navigate('/doctor-dashboard');
         } else if (selectedRole === 'admin') {
-          navigate('/admin-portal');
+          navigate('/admin-dashboard');
         } else {
           navigate('/patient-portal');
         }

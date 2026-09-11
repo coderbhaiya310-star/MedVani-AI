@@ -212,19 +212,28 @@ export const PatientPortalPage: React.FC<PatientPortalPageProps> = ({ user, onLo
             </p>
           </div>
 
-          {/* Start Voice Consultation Button */}
-          <div className="z-10 shrink-0">
+          {/* Start Voice Consultation & Document Timeline Buttons */}
+          <div className="z-10 shrink-0 flex flex-col sm:flex-row items-center gap-3">
             <button
               id="patient-start-voice-consult-btn"
               type="button"
               onClick={() => navigate('/voice-intake')}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-white text-[#1E40AF] hover:bg-blue-50 active:scale-98 font-bold text-sm sm:text-base shadow-md transition-all cursor-pointer group"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-6 py-3.5 rounded-2xl bg-white text-[#1E40AF] hover:bg-blue-50 active:scale-98 font-bold text-sm sm:text-base shadow-md transition-all cursor-pointer group"
             >
               <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Mic className="w-4 h-4" />
               </div>
               <span>Start Voice Consultation</span>
               <ArrowRight className="w-4 h-4 ml-1" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigate('/documents')}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-2xl bg-white/15 hover:bg-white/25 text-white font-bold text-sm sm:text-base border border-white/30 backdrop-blur-xs transition-all cursor-pointer"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Medical Document Timeline & OCR</span>
             </button>
           </div>
         </div>
@@ -278,6 +287,14 @@ export const PatientPortalPage: React.FC<PatientPortalPageProps> = ({ user, onLo
           >
             <Calendar className="w-4 h-4" />
             <span>Appointments ({appointments.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/documents')}
+            className="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer flex items-center gap-2 shrink-0 bg-teal-50 text-teal-800 hover:bg-teal-100 border border-teal-200 ml-auto"
+          >
+            <FileText className="w-4 h-4 text-teal-600" />
+            <span>Document Timeline (Oldest → Newest)</span>
           </button>
         </div>
 

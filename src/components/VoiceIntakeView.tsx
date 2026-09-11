@@ -295,7 +295,7 @@ export const VoiceIntakeView: React.FC<VoiceIntakeViewProps> = ({
   };
 
   // Speak AI Nurse response aloud (with OpenAI TTS + Web Speech API fallback)
-  const speakAiResponse = async (textToSpeak: string) => {
+  const speakAiResponse = async (textToSpeak: string, targetLang?: string) => {
     setVoiceState('AI_SPEAKING');
     speechManager.setAiSpeaking(true);
     speechManager.stopListening();
@@ -337,7 +337,7 @@ export const VoiceIntakeView: React.FC<VoiceIntakeViewProps> = ({
           audio.onerror = () => {
             URL.revokeObjectURL(audioUrl);
             currentAudioRef.current = null;
-            speakViaWebSpeech(textToSpeak, onPlaybackDone);
+            speakViaWebSpeech(textToSpeak, onPlaybackDone, targetLang);
           };
           await audio.play();
           return;
@@ -347,13 +347,13 @@ export const VoiceIntakeView: React.FC<VoiceIntakeViewProps> = ({
       // Proceed to client Web Speech API fallback
     }
 
-    speakViaWebSpeech(textToSpeak, onPlaybackDone);
+    speakViaWebSpeech(textToSpeak, onPlaybackDone, targetLang);
   };
 
-  const speakViaWebSpeech = (textToSpeak: string, onDone: () => void) => {
+  const speakViaWebSpeech = (textToSpeak: string, onDone: () => void, targetLang?: string) => {
     speakTextAloud(
       textToSpeak,
-      session.activeLanguage,
+      (targetLang || session.activeLanguage) as any,
       speechSpeed,
       () => {
         setVoiceState('AI_SPEAKING');
@@ -461,7 +461,10 @@ export const VoiceIntakeView: React.FC<VoiceIntakeViewProps> = ({
         setLiveExtraction(newLiveExt);
       }
 
+      const resolvedLang = (aiResponse.detected_language_code as any) || session.activeLanguage;
+
       onUpdateSession({
+        activeLanguage: resolvedLang,
         messages: finalMessages,
         conversationPhase: (aiResponse.nextPhase as any) || session.conversationPhase,
         liveExtraction: newLiveExt,
@@ -497,9 +500,9 @@ export const VoiceIntakeView: React.FC<VoiceIntakeViewProps> = ({
         setShowCameraScanner(true);
       }
 
-      // If active, speak AI response and continue loop
+      // If active, speak AI response in matching language and continue loop
       if (isVoiceSessionActiveRef.current) {
-        speakAiResponse(aiResponse.replyText);
+        speakAiResponse(aiResponse.replyText, resolvedLang);
       } else {
         setVoiceState('IDLE');
       }

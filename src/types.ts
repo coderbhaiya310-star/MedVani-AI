@@ -1,6 +1,7 @@
 export type LanguageCode =
   | 'en'
   | 'hi'
+  | 'hinglish'
   | 'bn'
   | 'mr'
   | 'te'
@@ -219,6 +220,17 @@ export interface MedicalDocument {
   requiresDoctorReview?: boolean;
   originalLanguage?: string;
   patientNameInDoc?: string;
+  dateVerificationStatus?: 'verified' | 'needs_verification';
+  textVerificationStatus?: 'verified' | 'needs_verification';
+  aiSummary?: string;
+  mimeType?: string;
+  fileData?: string;
+  originalFile?: {
+    base64?: string;
+    mimeType?: string;
+    name?: string;
+    sizeBytes?: number;
+  };
   qualityCheck?: {
     isReadable: boolean;
     blurScore?: number;

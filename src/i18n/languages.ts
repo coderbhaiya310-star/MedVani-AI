@@ -38,6 +38,24 @@ export const INDIAN_LANGUAGES: SupportedLanguage[] = [
     processingPrompt: 'मैं आपकी बात समझ रहा हूँ...',
   },
   {
+    code: 'hinglish',
+    locale: 'hi-IN',
+    name: 'Hinglish',
+    nativeName: 'Hinglish',
+    englishName: 'Hinglish (Conversational Hindi in Latin script)',
+    direction: 'ltr',
+    speechRecognitionLocale: 'hi-IN',
+    speechSynthesisLocale: 'hi-IN',
+    speechVoiceLang: 'hi-IN',
+    script: 'Latin',
+    greeting: 'Namaste. Main aapki AI clinical nurse Ananya hoon. Aaj aapko kya pareshani ya sharirik takleef ho rahi hai? Kripya khul kar batayein.',
+    isRtl: false,
+    region: 'Pan-India',
+    exampleQuery: 'Mujhe 3 din se fever hai aur sar dard ho raha hai',
+    listeningPrompt: 'Main sun rahi hoon... Kripya boliye',
+    processingPrompt: 'Aapki baat samajh rahi hoon...',
+  },
+  {
     code: 'bn',
     locale: 'bn-IN',
     name: 'Bengali',
@@ -257,6 +275,10 @@ export function getLocalizedWelcomeGreeting(code: string, patientName?: string):
       return name
         ? `नमस्ते ${name} जी, मैं आपकी AI क्लिनिकल नर्स अनन्या हूँ। आज आपको क्या परेशानी या शारीरिक तकलीफ़ हो रही है? कृपया अपनी भाषा में खुलकर बताइए।`
         : 'नमस्ते, मैं आपकी AI क्लिनिकल नर्स अनन्या हूँ। आज आपको क्या परेशानी या शारीरिक तकलीफ़ हो रही है? कृपया अपनी भाषा में खुलकर बताइए।';
+    case 'hinglish':
+      return name
+        ? `Namaste ${name} ji, main aapki AI clinical nurse Ananya hoon. Aaj aapko kya pareshani ya sharirik takleef ho rahi hai? Kripya apni bhasha me khul kar batayein.`
+        : 'Namaste, main aapki AI clinical nurse Ananya hoon. Aaj aapko kya pareshani ya sharirik takleef ho rahi hai? Kripya apni bhasha me khul kar batayein.';
     case 'bn':
       return name
         ? `নমস্কার ${name} মহাশয়/মহাশয়া, আমি আপনার এআই ক্লিনিকাল নার্স অনন্যা। আজ আপনার কী ধরনের শারীরিক সমস্যা হচ্ছে? অনুগ্রহ করে আপনার ভাষায় বলুন।`

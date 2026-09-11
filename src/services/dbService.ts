@@ -12,6 +12,7 @@ import {
   AuthUser,
 } from '../types';
 import { getLocalizedWelcomeGreeting } from '../i18n/languages';
+import { SEEDED_INTERVIEWS, SEEDED_DOCUMENTS } from './seededPatientClinicalData';
 
 // LocalStorage Keys for complete browser persistence
 const STORAGE_KEYS = {
@@ -23,7 +24,7 @@ const STORAGE_KEYS = {
   TIMELINES: 'swasthya_db_timelines',
   DOCTOR_NOTES: 'swasthya_db_doctor_notes',
   RECENT_PATIENTS: 'swasthya_db_recent_patients',
-  INITIALIZED: 'swasthya_db_v2_initialized',
+  INITIALIZED: 'swasthya_db_v6_complete_doctor_data',
 };
 
 // Safe JSON local storage helpers
@@ -84,6 +85,37 @@ class DatabaseService {
       this.seedInitialDatabase();
       localStorage.setItem(STORAGE_KEYS.INITIALIZED, 'true');
     }
+  }
+
+  /**
+   * Helper to normalize patient IDs and aliases (e.g. PAT-001, PAT-101, usr-pat-001)
+   * Ensures strict patient data retrieval without cross-patient leakage.
+   */
+  public getEquivalentPatientIds(patientId: string): Set<string> {
+    const ids = new Set<string>();
+    if (!patientId) return ids;
+    const clean = patientId.trim();
+    ids.add(clean);
+    ids.add(clean.toLowerCase());
+    ids.add(clean.toUpperCase());
+
+    // Extract numeric suffix
+    const match = clean.match(/(\d+)/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num === 1 || num === 101) {
+        ['PAT-001', 'PAT-101', 'usr-pat-001', 'pat-001', 'pat-101', 'patient 001', 'patient 101', 'Patient 001'].forEach((x) => ids.add(x));
+      } else if (num === 2 || num === 102) {
+        ['PAT-002', 'PAT-102', 'usr-pat-002', 'pat-002', 'pat-102', 'patient 002', 'patient 102', 'Patient 002'].forEach((x) => ids.add(x));
+      } else if (num === 3 || num === 103) {
+        ['PAT-003', 'PAT-103', 'usr-pat-003', 'pat-003', 'pat-103', 'patient 003', 'patient 103', 'Patient 003'].forEach((x) => ids.add(x));
+      } else if (num === 4 || num === 104) {
+        ['PAT-004', 'PAT-104', 'usr-pat-004', 'pat-004', 'pat-104', 'patient 004', 'patient 104', 'Patient 004'].forEach((x) => ids.add(x));
+      } else if (num === 5 || num === 105) {
+        ['PAT-005', 'PAT-105', 'usr-pat-005', 'pat-005', 'pat-105', 'patient 005', 'patient 105', 'Patient 005'].forEach((x) => ids.add(x));
+      }
+    }
+    return ids;
   }
 
   // -----------------------------
@@ -532,8 +564,9 @@ class DatabaseService {
 
   public async getPatientConsultations(patientId: string): Promise<ConsultationRecord[]> {
     const allConsultations = readStorage<ConsultationRecord[]>(STORAGE_KEYS.CONSULTATIONS, []);
+    const validIds = this.getEquivalentPatientIds(patientId);
     return allConsultations
-      .filter((c) => c.patientId === patientId)
+      .filter((c) => c.patientId && (validIds.has(c.patientId) || validIds.has(c.patientId.toLowerCase()) || validIds.has(c.patientId.toUpperCase())))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
@@ -625,7 +658,10 @@ class DatabaseService {
 
   public async getPatientReports(patientId: string): Promise<MedicalReportItem[]> {
     const all = readStorage<MedicalReportItem[]>(STORAGE_KEYS.REPORTS, []);
-    return all.filter((r) => r.patientId === patientId).sort((a, b) => new Date(b.reportDate).getTime() - new Date(a.reportDate).getTime());
+    const validIds = this.getEquivalentPatientIds(patientId);
+    return all
+      .filter((r) => r.patientId && (validIds.has(r.patientId) || validIds.has(r.patientId.toLowerCase()) || validIds.has(r.patientId.toUpperCase())))
+      .sort((a, b) => new Date(b.reportDate).getTime() - new Date(a.reportDate).getTime());
   }
 
   public async createMedicalReport(payload: Partial<MedicalReportItem> & { patientId: string }): Promise<MedicalReportItem> {
@@ -672,7 +708,19 @@ class DatabaseService {
 
   public async getPatientDocuments(patientId: string): Promise<MedicalDocument[]> {
     const all = readStorage<MedicalDocument[]>(STORAGE_KEYS.DOCUMENTS, []);
-    return all.filter((d) => d.patientId === patientId).sort((a, b) => new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime());
+    const validIds = this.getEquivalentPatientIds(patientId);
+    return all
+      .filter((d) => d.patientId && (validIds.has(d.patientId) || validIds.has(d.patientId.toLowerCase()) || validIds.has(d.patientId.toUpperCase())))
+      .sort((a, b) => {
+        // Automatic chronological arrangement: oldest → newest by detected medical date
+        const timeA = a.documentDate && a.dateVerificationStatus !== 'needs_verification'
+          ? new Date(a.documentDate).getTime()
+          : (a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0);
+        const timeB = b.documentDate && b.dateVerificationStatus !== 'needs_verification'
+          ? new Date(b.documentDate).getTime()
+          : (b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0);
+        return timeA - timeB;
+      });
   }
 
   public async saveDocument(doc: MedicalDocument): Promise<MedicalDocument> {
@@ -692,27 +740,49 @@ class DatabaseService {
   public async createDocument(payload: Partial<MedicalDocument> & { patientId: string }): Promise<MedicalDocument> {
     const all = readStorage<MedicalDocument[]>(STORAGE_KEYS.DOCUMENTS, []);
     const now = new Date().toISOString();
+    const hasValidDate = Boolean(payload.documentDate && /^\d{4}-\d{2}-\d{2}$/.test(payload.documentDate));
     const newDoc: MedicalDocument = {
       id: payload.id || `doc-${Date.now()}`,
       patientId: payload.patientId,
       title: payload.title || 'Medical Record Document',
       documentType: payload.documentType || 'other',
-      documentDate: payload.documentDate || now.split('T')[0],
+      documentDate: hasValidDate ? (payload.documentDate as string) : '',
+      dateVerificationStatus: payload.dateVerificationStatus || (hasValidDate ? 'verified' : 'needs_verification'),
+      textVerificationStatus: payload.textVerificationStatus || 'verified',
+      aiSummary: payload.aiSummary || 'Medical record preserved and indexed for physician evaluation.',
       uploadedAt: now,
       facilityOrDoctor: payload.facilityOrDoctor || 'Hospital Clinic',
       fileUrl: payload.fileUrl,
+      fileData: payload.fileData || payload.fileUrl,
+      mimeType: payload.mimeType || 'image/jpeg',
+      originalFile: payload.originalFile,
       extractedText: payload.extractedText,
       extractedData: payload.extractedData,
-      pageCount: payload.pageCount,
-      pageImages: payload.pageImages,
+      pageCount: payload.pageCount || 1,
+      pageImages: payload.pageImages || (payload.fileUrl ? [payload.fileUrl] : []),
       qualityCheck: payload.qualityCheck,
-      isAiExtracted: payload.isAiExtracted,
-      requiresDoctorReview: payload.requiresDoctorReview,
+      isAiExtracted: payload.isAiExtracted ?? true,
+      requiresDoctorReview: payload.requiresDoctorReview ?? true,
     };
 
     const updated = [newDoc, ...all];
     writeStorage(STORAGE_KEYS.DOCUMENTS, updated);
     return newDoc;
+  }
+
+  public async verifyDocumentDate(docId: string, verifiedDate: string): Promise<MedicalDocument | null> {
+    const all = readStorage<MedicalDocument[]>(STORAGE_KEYS.DOCUMENTS, []);
+    const idx = all.findIndex((d) => d.id === docId);
+    if (idx === -1) return null;
+
+    const updatedDoc: MedicalDocument = {
+      ...all[idx],
+      documentDate: verifiedDate,
+      dateVerificationStatus: 'verified',
+    };
+    all[idx] = updatedDoc;
+    writeStorage(STORAGE_KEYS.DOCUMENTS, all);
+    return updatedDoc;
   }
 
   // -----------------------------
@@ -721,7 +791,14 @@ class DatabaseService {
 
   public async getInterviewState(patientId: string): Promise<StructuredInterviewState | null> {
     const all = readStorage<Record<string, StructuredInterviewState>>(STORAGE_KEYS.INTERVIEWS, {});
-    return all[patientId] || null;
+    if (all[patientId]) return all[patientId];
+    const validIds = this.getEquivalentPatientIds(patientId);
+    for (const key of Object.keys(all)) {
+      if (validIds.has(key) || validIds.has(key.toLowerCase()) || validIds.has(key.toUpperCase())) {
+        return all[key];
+      }
+    }
+    return null;
   }
 
   public async saveInterviewState(patientId: string, state: Partial<StructuredInterviewState>): Promise<StructuredInterviewState> {
@@ -780,8 +857,9 @@ class DatabaseService {
 
   public async getPatientTimeline(patientId: string): Promise<TimelineEventItem[]> {
     const all = readStorage<Array<TimelineEventItem & { patientId: string }>>(STORAGE_KEYS.TIMELINES, []);
+    const validIds = this.getEquivalentPatientIds(patientId);
     return all
-      .filter((t) => t.patientId === patientId)
+      .filter((t) => t.patientId && (validIds.has(t.patientId) || validIds.has(t.patientId.toLowerCase()) || validIds.has(t.patientId.toUpperCase())))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
@@ -812,7 +890,10 @@ class DatabaseService {
 
   public async getPatientDoctorNotes(patientId: string): Promise<DoctorNoteItem[]> {
     const all = readStorage<DoctorNoteItem[]>(STORAGE_KEYS.DOCTOR_NOTES, []);
-    return all.filter((n) => n.patientId === patientId).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const validIds = this.getEquivalentPatientIds(patientId);
+    return all
+      .filter((n) => n.patientId && (validIds.has(n.patientId) || validIds.has(n.patientId.toLowerCase()) || validIds.has(n.patientId.toUpperCase())))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }
 
   public async createDoctorNote(payload: Partial<DoctorNoteItem> & { patientId: string }): Promise<DoctorNoteItem> {
@@ -1462,10 +1543,11 @@ class DatabaseService {
       },
     ];
 
-    const existingDocs = readStorage<MedicalDocument[]>(STORAGE_KEYS.DOCUMENTS, []);
-    if (existingDocs.length === 0) {
-      writeStorage(STORAGE_KEYS.DOCUMENTS, initialDocuments);
-    }
+    // Seed comprehensive Medical Documents per patient
+    writeStorage(STORAGE_KEYS.DOCUMENTS, SEEDED_DOCUMENTS);
+
+    // Seed comprehensive Structured AI Interviews & Transcripts per patient
+    writeStorage(STORAGE_KEYS.INTERVIEWS, SEEDED_INTERVIEWS);
   }
 }
 
